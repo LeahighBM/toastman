@@ -54,7 +54,7 @@ class Toastman(App):
 
         with TabbedContent():
             yield TabPane("Tab 1", Label("Tab 1"))
-            yield TabPane("POST Body", TextArea(id="post_body",language="json",))
+            yield TabPane("POST Body", TextArea(id="post_body",language="json", text="{\n\t\n}"))
             yield TabPane("Tab 3", Label("content"))
     
         with Container():
