@@ -1,0 +1,12 @@
+#http_verb_select {
+    width:      15;
+    height:     10;
+}
+
+#url_bar {
+    width:      70%;
+}
+
+#response.data {
+    height:     45%;
+}
