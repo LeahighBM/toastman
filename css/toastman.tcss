@@ -26,6 +26,10 @@ Screen {
     height:     10
 }
 
+#copy {
+    height: 3;
+}
+
 #sidebar {
     width: 25%;
     dock: left;
@@ -36,4 +40,13 @@ Screen {
 
 #sidebar.visible {
     display: block; /* Visible when 'visible' class is present */
+}
+
+Input {
+    border: round $accent;
+    background: $panel;
+    color: $text;
+}
+Input:focus {
+    border: heavy $success;
 }

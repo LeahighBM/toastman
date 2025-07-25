@@ -62,7 +62,7 @@ class Toastman(App):
                 read_only=True,
                 id="response_text"
                 )
-            yield Button("Copy to clipboard", variant="warning", id="copy")
+            yield Button("Copy", variant="warning", id="copy")
             
         yield Footer()
 
