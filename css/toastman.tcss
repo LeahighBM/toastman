@@ -1,0 +1,52 @@
+Screen {
+    layout: vertical;
+    padding: 1;
+}
+
+#http_verb_select {
+    width:      17;
+    height:     10;
+    
+}
+
+#url_bar {
+    width:      70%;
+    
+}
+
+#response_text {
+   
+}
+
+#send_button {
+    
+}
+
+#post_body {
+    height:     10
+}
+
+#copy {
+    height: 3;
+}
+
+#sidebar {
+    width: 25%;
+    dock: left;
+    background: #333;
+    color: white;
+    display: none; /* Initially hidden */
+}
+
+#sidebar.visible {
+    display: block; /* Visible when 'visible' class is present */
+}
+
+Input {
+    border: round $accent;
+    background: $panel;
+    color: $text;
+}
+Input:focus {
+    border: heavy $success;
+}
