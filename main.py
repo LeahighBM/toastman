@@ -1,6 +1,8 @@
 import json
 import pyperclip
 import requests
+from extended_text_area import ExtendedTextArea
+from http import HTTPStatus
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalScroll, Vertical
@@ -26,43 +28,53 @@ class Toastman(App):
     ]
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        with Header(show_clock=True):
+            yield Button("IDK, man", compact=True, id="idk")
 
         yield Container(
-            Static("https://pokeapi.co/api/v2/pokemon", id="sidebar_content"),
+            Button("[b][green]GET[/green][/b] https://pokeapi.co/api/v2/pokemon/ditto", 
+                   id="saved_url_button"),
             id="sidebar"
         )
 
         with HorizontalScroll():
             yield Select(
                 options = [
-                    ("GET", "GET"),
-                    ("POST", "POST"),
-                    ("PUT", "PUT"),
-                    ("DELETE", "DELETE"),
+                    ("[b][green]GET[/green][/b]", "GET"),
+                    ("[b][blue]POST[/blue][/b]", "POST"),
+                    ("[b][orange]PUT[/orange][/b]", "PUT"),
+                    ("[b][red]DELETE[/red][/b]", "DELETE"),
                     ("OPTIONS", "OPTIONS")
                 ],
                 value="GET",
-                id="http_verb_select"
-                
-            )
+                id="http_verb_select")
+
             yield Input(
                 placeholder="https://example.com/items",
                 id="url_bar",)
             
             yield Button("SEND", variant="primary", id="send_button")
-
+        
         with TabbedContent():
-            yield TabPane("Tab 1", Label("Tab 1"))
-            yield TabPane("POST Body", TextArea(id="post_body",language="json", text="{\n\t\n}"))
-            yield TabPane("Tab 3", Label("content"))
+            yield TabPane("Hide", Label(""))
+            yield TabPane("Body", ExtendedTextArea.code_editor(id="post_body",
+                                           language="json", 
+                                           text="{\n\n\n}",
+                                           show_line_numbers=True,
+                                           tab_behavior="indent"))
+            yield TabPane("Headers", ExtendedTextArea.code_editor(id="header_data",
+                                                                  highlight_cursor_line=False))
     
         with Container():
-            yield TextArea(
-                read_only=True,
-                id="response_text"
-                )
-            yield Button("Copy", variant="warning", id="copy")
+            with TabbedContent(id="response_tabs"):
+                yield TabPane("Response", TextArea(
+                    read_only=True,
+                    id="response_text",))
+                yield TabPane("Header Data", TextArea(
+                    read_only=True,
+                    id="resp_headers"
+                ))
+        yield Button("Copy", variant="warning", id="copy")
             
         yield Footer()
 
@@ -74,61 +86,117 @@ class Toastman(App):
 
         input_obj = self.query_one("#url_bar", Input)
         url = input_obj.value
-        print(verb, url)
 
         # the smart thing to do would be to check that the URL is not None or "" before we get here
         # but I tried that and it broke everything... so we are stuck with checking for the 
         # MissingSchema for every verb  
+        # I also hate how I have to repeat everything for each request type... I need to fix that
         match verb:
             case "GET":
                 try:
                     resp = requests.get(url=url)
                     resp.raise_for_status()
                     json_data = json.dumps(resp.json(), indent=2, default=str)
-                    self.update_text(json_data)
+                    self.update_response_text(json_data)
+                    self.update_response_headers(resp.headers)
+
+                    if resp.status_code >= 200 and resp.status_code <= 299:
+                        self.notify(f"Success!", 
+                                    title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
+
                 except requests.exceptions.MissingSchema as e:
                     message = f"Missing URL. {e}"
-                    self.update_text(message)
-                except requests.HTTPError as he:
-                    self.update_text(f"An error occurred during or as a result of the last request: {he}")
+                    self.update_response_text(message)
+                except requests.RequestException as e:
+                    self.update_response_text(f"{e}")
+                    self.notify(f"Request unsuccessful. Something went wrong", 
+                                severity="error",
+                                title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
+                    
             case "POST":
                 try:
                     post_body_obj = self.query_one("#post_body")
                     body = post_body_obj.text
                     body = json.dumps(body)
                     resp = requests.post(url=url, data=body)
+                    resp.raise_for_status()
+                    self.update_response_text(json_data)
+                    self.update_response_headers(resp.headers)
+
+                    if resp.status_code >= 200 and resp.status_code <= 299:
+                        self.notify(f"Success!", 
+                                    title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
+
                 except requests.exceptions.MissingSchema as e:
                     message = f"Missing URL. {e}"
-                    self.update_text(message)
+                    self.update_response_text(message)
+                except requests.RequestException as e:
+                    self.update_response_text(f"{e}")
+                    self.update_response_headers(resp.headers)
+                    self.notify(f"Request unsuccessful. Something went wrong.", 
+                                severity="error",
+                                title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
+
             case "OPTIONS":
                 try:
                     resp = requests.options(url=url)
                     resp.raise_for_status()
+
+                    if resp.status_code >= 200 and resp.status_code <= 299:
+                        self.notify(f"{resp.status_code} success!")
+
                     if resp.headers.get( 'Access-Control-Allow-Methods') is not None:
-                        self.update_text(resp.headers.get( 'Access-Control-Allow-Methods'))
-                    else:
-                        self.update_text(resp.headers)
+                        self.update_response_text(resp.headers.get( 'Access-Control-Allow-Methods'))
+
+                    self.update_response_headers(resp.headers)
                 except requests.exceptions.MissingSchema as e:
                     message = f"Missing URL. {e}"
-                    self.update_text(message)
+                    self.update_response_text(message)
+                except requests.RequestException as e:
+                    self.update_response_text(f"{e}")
+                    self.update_response_headers(resp.headers)
+                    self.notify(f"Request unsuccessful. Something went wrong.", 
+                                severity="error",
+                                title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
 
     def on_mount(self) -> None:  
         self.theme = "dracula"
 
     @on(Button.Pressed, "#copy")
     def copy_button_press(self, event) -> None:
-        self.copy_text()
+        self.copy_text()  
 
-    def update_text(self, text) -> None: 
+    @on(Button.Pressed, "#saved_url_button")
+    def populate_url_data(self, event) -> None:
+        url_bar = self.query_one("#url_bar", Input)
+        select_obj = self.query_one("#http_verb_select", Select)
+        s = event.button.label.split(" ")
+        select_obj.value = s[0]
+        url_bar.value = str(s[1])
+
+    @on(Button.Pressed, "#idk")
+    def idk(self, event) -> None:
+        self.action_toggle_sidebar()
+
+    def update_response_text(self, text) -> None: 
         response_text_obj = self.query_one("#response_text", TextArea)
-        response_text_obj.text = text   
+        response_text_obj.text = text
+
+    def update_response_headers(self, header_dict) -> None:
+        response_head_obj = self.query_one("#resp_headers", TextArea)
+        for k,v in header_dict.items():
+            response_head_obj.insert(f"{k}: {v}\n")
+        response_head_obj.cursor_location = (0,0)
+        response_head_obj.highlight_cursor_line = False
 
     def copy_text(self) -> None:
-        text_obj = self.query_one("#response_text")
-        text = text_obj.text 
+        resp_tab      = self.query_one("#response_tabs")
+        active_tab    = resp_tab.active 
+        child_tab_obj = self.query_one("#response_text") if active_tab == "tab-1" else self.query_one("#resp_headers")
+        active_text   = child_tab_obj.text 
 
         try:
-            pyperclip.copy(text=text)
+            pyperclip.copy(text=active_text)
             self.notify("Copied to clipboard.")
         except pyperclip.PyperclipException as e:
             self.notify(f"Could not copy to clipboard. {e}")

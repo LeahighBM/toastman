@@ -26,6 +26,11 @@ Screen {
     height:     10
 }
 
+
+#header_data {
+    height:     10
+}
+
 #copy {
     height: 3;
 }
