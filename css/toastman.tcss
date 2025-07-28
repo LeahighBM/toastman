@@ -3,6 +3,10 @@ Screen {
     padding: 1;
 }
 
+Header {
+    dock: top;
+}
+
 #http_verb_select {
     width:      17;
     height:     10;
@@ -23,6 +27,10 @@ Screen {
 }
 
 #post_body {
+    height:     10
+}
+
+#header_data {
     height:     10
 }
 
