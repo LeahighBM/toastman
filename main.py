@@ -128,7 +128,7 @@ class Toastman(App):
                     self.notify(f"Request unsuccessful. Something went wrong", 
                                 severity="error",
                                 title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
-               
+                
             case "POST":
                 try:
                     post_body_obj = self.query_one("#post_body")
@@ -182,6 +182,7 @@ class Toastman(App):
     def copy_button_press(self, event) -> None:
         self.copy_text()  
 
+
     @on(Button.Pressed, ".saved_request_button")
     def populate_url_data(self, event) -> None:
         url_bar = self.query_one("#url_bar", Input)
@@ -189,6 +190,7 @@ class Toastman(App):
         s = event.button.label.split(" ")
         select_obj.value = s[0]
         url_bar.value = str(s[1])
+
 
     @on(Button.Pressed, "#toggle_side_panel_button")
     def toggle_side_bar_from_header_bar(self, event) -> None:
