@@ -1,6 +1,8 @@
 import json
+import re
 import pyperclip
 import requests
+from parse_config import parse_saved_requests
 from extended_text_area import ExtendedTextArea
 from http import HTTPStatus
 from textual import on
@@ -17,9 +19,15 @@ from textual.widgets import (
     TextArea,
     TabbedContent,
     TabPane,
-    Label
+    Label,
+    Collapsible
 )
-
+color_dict = {
+            "GET":    "[b][green]GET[/green][/b]",
+            "POST":   "[b][blue]POST[/blue][/b]",
+            "PUT":    "[b][orange]PUT[/orange][/b]",
+            "DELETE": "[b][red]DELETE[/red][/b]"
+        }
 class Toastman(App):
     CSS_PATH = "css/toastman.tcss"
     BINDINGS = [
@@ -28,15 +36,20 @@ class Toastman(App):
     ]
 
     def compose(self) -> ComposeResult:
+        with open(".saved_requests", 'r') as f:
+            lines = f.read()
+
         with Header(show_clock=True):
-            yield Button("IDK, man", compact=True, id="idk")
+            yield Button("Toggle Side[underline]b[/underline]ar", compact=True, id="toggle_side_panel_button")
 
-        yield Container(
-            Button("[b][green]GET[/green][/b] https://pokeapi.co/api/v2/pokemon/ditto", 
-                   id="saved_url_button"),
-            id="sidebar"
-        )
-
+        parsed = parse_saved_requests(lines)
+        
+        with Container(id="sidebar"):
+            for k,v in parsed.items():
+                with Collapsible(title=k):
+                    for x in v:
+                        yield Button(f"{color_dict.get(x.get("method"))} {x.get("url")}", classes="saved_request_button")
+            
         with HorizontalScroll():
             yield Select(
                 options = [
@@ -107,12 +120,15 @@ class Toastman(App):
                 except requests.exceptions.MissingSchema as e:
                     message = f"Missing URL. {e}"
                     self.update_response_text(message)
+                except requests.exceptions.ConnectionError as e:
+                    self.update_response_text(f"{e}")
                 except requests.RequestException as e:
                     self.update_response_text(f"{e}")
+                    self.update_response_headers(resp.headers)
                     self.notify(f"Request unsuccessful. Something went wrong", 
                                 severity="error",
                                 title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
-                    
+                
             case "POST":
                 try:
                     post_body_obj = self.query_one("#post_body")
@@ -132,7 +148,7 @@ class Toastman(App):
                     self.update_response_text(message)
                 except requests.RequestException as e:
                     self.update_response_text(f"{e}")
-                    self.update_response_headers(resp.headers)
+                    self.update_response_headers(resp.headers) # this will cause the program to hard crash in the event of a connection error
                     self.notify(f"Request unsuccessful. Something went wrong.", 
                                 severity="error",
                                 title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
@@ -159,14 +175,15 @@ class Toastman(App):
                                 severity="error",
                                 title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
 
-    def on_mount(self) -> None:  
+    def on_mount(self):  
         self.theme = "dracula"
 
     @on(Button.Pressed, "#copy")
     def copy_button_press(self, event) -> None:
         self.copy_text()  
 
-    @on(Button.Pressed, "#saved_url_button")
+
+    @on(Button.Pressed, ".saved_request_button")
     def populate_url_data(self, event) -> None:
         url_bar = self.query_one("#url_bar", Input)
         select_obj = self.query_one("#http_verb_select", Select)
@@ -174,13 +191,15 @@ class Toastman(App):
         select_obj.value = s[0]
         url_bar.value = str(s[1])
 
-    @on(Button.Pressed, "#idk")
-    def idk(self, event) -> None:
+
+    @on(Button.Pressed, "#toggle_side_panel_button")
+    def toggle_side_bar_from_header_bar(self, event) -> None:
         self.action_toggle_sidebar()
 
     def update_response_text(self, text) -> None: 
         response_text_obj = self.query_one("#response_text", TextArea)
         response_text_obj.text = text
+        response_text_obj.highlight_cursor_line = False
 
     def update_response_headers(self, header_dict) -> None:
         response_head_obj = self.query_one("#resp_headers", TextArea)

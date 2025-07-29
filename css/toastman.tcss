@@ -10,7 +10,7 @@ Screen {
 }
 
 #url_bar {
-    width:      70%;
+    width:      83%;
     
 }
 
@@ -35,8 +35,14 @@ Screen {
     height: 3;
 }
 
+#toggle_side_panel_button {
+    background: $panel;
+}
+
+
 #sidebar {
-    width: 25%;
+    width: 35%;
+    margin: 2;
     dock: left;
     background: #333;
     color: white;
