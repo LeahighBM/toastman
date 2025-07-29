@@ -129,7 +129,7 @@ class Toastman(App):
                                 severity="error",
                                 title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
                 
-            case "POST":
+            case "POST": # this is a test because why does everything have merge conflicts
                 try:
                     post_body_obj = self.query_one("#post_body")
                     body = post_body_obj.text
