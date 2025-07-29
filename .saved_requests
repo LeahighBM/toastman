@@ -1,0 +1,14 @@
+[[pokemon]]
+request: GET https://pokeapi.co/api/v2/pokemon/ditto
+request: GET https://pokeapi.co/api/v2/pokemon/pikachu
+request: GET https://pokeapi.co/api/v2/pokemon/charmander
+request: GET https://pokeapi.co/api/v2/pokemon/diglett
+
+[[abilities]]
+request: GET https://pokeapi.co/api/v2/bility/limber/
+
+[[personal]]
+request: POST http://localhost:8000/items
+
+
+
