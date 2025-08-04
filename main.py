@@ -7,8 +7,9 @@ from extended_text_area import ExtendedTextArea
 from http import HTTPStatus
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import HorizontalScroll, Vertical
+from textual.containers import HorizontalScroll, Vertical, Horizontal
 from textual.containers import Container
+from textual.screen import Screen
 from textual.widgets import (
     Static, 
     Footer, 
@@ -28,11 +29,27 @@ color_dict = {
             "PUT":    "[b][orange]PUT[/orange][/b]",
             "DELETE": "[b][red]DELETE[/red][/b]"
         }
+
+class MyModalScreen(Screen):
+    BINDINGS = [
+        ("escape", "dismiss", "Dismiss"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        yield Label("This is a modal pop-up!")
+        yield Button("Close", id="close_button")
+        yield Footer()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close_button":
+            self.dismiss()
 class Toastman(App):
     CSS_PATH = "css/toastman.tcss"
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("b", "toggle_sidebar", "Toggle Sidebar"),
+        ("s", "save_request", "Save Request"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -41,6 +58,7 @@ class Toastman(App):
 
         with Header(show_clock=True):
             yield Button("Toggle Side[underline]b[/underline]ar", compact=True, id="toggle_side_panel_button")
+            # yield Button("[underline]S[/underline]ave request", compact=True, id="save")
 
         parsed = parse_saved_requests(lines)
         
@@ -88,6 +106,7 @@ class Toastman(App):
                     id="resp_headers"
                 ))
         yield Button("Copy", variant="warning", id="copy")
+        yield Button("Save request", variant="warning", id="save")
             
         yield Footer()
 
@@ -109,7 +128,7 @@ class Toastman(App):
                 try:
                     resp = requests.get(url=url)
                     resp.raise_for_status()
-                    json_data = json.dumps(resp.json(), indent=2, default=str)
+                    json_data = json.dumps(resp.json(), indent=2, default=str, ensure_ascii=False)
                     self.update_response_text(json_data)
                     self.update_response_headers(resp.headers)
 
@@ -129,7 +148,7 @@ class Toastman(App):
                                 severity="error",
                                 title=f"{resp.status_code} {HTTPStatus(resp.status_code).phrase}")
                 
-            case "POST":
+            case "POST": # this is a test because why does everything have merge conflicts
                 try:
                     post_body_obj = self.query_one("#post_body")
                     body = post_body_obj.text
@@ -177,6 +196,10 @@ class Toastman(App):
 
     def on_mount(self):  
         self.theme = "dracula"
+
+    @on(Button.Pressed, "#save")
+    def open_popup(self, event) -> None:
+        self.push_screen(MyModalScreen())
 
     @on(Button.Pressed, "#copy")
     def copy_button_press(self, event) -> None:

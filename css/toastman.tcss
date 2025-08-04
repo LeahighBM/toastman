@@ -35,13 +35,17 @@ Screen {
     height: 3;
 }
 
+#save {
+   
+}
+
 #toggle_side_panel_button {
     background: $panel;
 }
 
 
 #sidebar {
-    width: 35%;
+    width: 30%;
     margin: 2;
     dock: left;
     background: #333;
